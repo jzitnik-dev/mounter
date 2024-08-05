@@ -2,7 +2,7 @@ mod preferences;
 mod commands;
 mod utils;
 
-use commands::{add::add, list::list, main::main as mainCommand, remove::remove};
+use commands::{add::add, all::all, list::list, main::main as mainCommand, remove::remove};
 use preferences::preferences::Preferences;
 use clap::{command, ArgGroup, Parser};
 use std::process;
@@ -26,15 +26,17 @@ struct Cli {
     #[arg(short = 'r', long = "remove", help = "Remove a mount point from the list.", value_name = "NAME")]
     remove: Option<String>,
 
-    // TODO: Implement mounting any local drive
-    // #[arg(short = 'a', long = "all", help = "Mount any connected drive.")]
-    // all: bool,
+    #[arg(long = "all", help = "Mount any connected drive.")]
+    all: bool,
 
     #[arg(long = "config", help = "Path to the configuration file.", value_name = "FILE")]
     config: Option<String>,
 
     #[arg(long = "sudo", help = "Specify whether to use sudo when mounting.", value_name = "OPTION", default_value = "false")]
     sudo: bool,
+
+    #[arg(long = "no-filter", help = "Don't filter drives in the --all.", requires = "all")]
+    no_filter: bool,
 }
 
 #[tokio::main]
@@ -58,6 +60,11 @@ async fn main() {
 
     if cli.remove.is_some() {
         remove(cli.remove.unwrap(), loaded_prefs, &cli.config).await;
+        return;
+    }
+
+    if cli.all {
+        all(cli.no_filter, cli.sudo);
         return;
     }
 

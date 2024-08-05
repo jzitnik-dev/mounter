@@ -15,7 +15,7 @@ pub fn main(prefs: Preferences, sudo: bool) {
         .iter()
         .map(|mount_point| {
             let mut name = mount_point.name.clone();
-            if is_mounted(mount_point) {
+            if is_mounted(&mount_point.address) {
                 name.push_str(" *");
             }
             name
@@ -30,7 +30,7 @@ pub fn main(prefs: Preferences, sudo: bool) {
         .unwrap();
 
     let mount_point = prefs.saved_mount_points.get(selection).unwrap();
-    let mounted = is_mounted(mount_point);
+    let mounted = is_mounted(&mount_point.address);
 
     if mounted {
         umount(mount_point, sudo);

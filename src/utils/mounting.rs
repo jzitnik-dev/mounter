@@ -32,14 +32,18 @@ pub fn mount(mount_point: &MountPoint, sudo: bool) {
 }
 
 pub fn umount(mount_point: &MountPoint, sudo: bool) {
+    umount_addr(&mount_point.mount_location, sudo)
+}
+
+pub fn umount_addr(mount_location: &str, sudo: bool) {
     let output = match sudo {
         true => Command::new("sudo")
             .arg("umount")
-            .arg(&mount_point.mount_location)
+            .arg(mount_location)
             .output()
             .expect("Failed to execute command"),
         false => Command::new("umount")
-            .arg(&mount_point.mount_location)
+            .arg(mount_location)
             .output()
             .expect("Failed to execute command"),
     };
