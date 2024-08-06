@@ -38,12 +38,6 @@ mounter -r nas
 mounter
 ```
 
-If you want to run the mount command as a sudo run
-
-```bash
-mounter --sudo
-```
-
 ## Specifying config path
 
 Optionally you can change where the config file will be located.
@@ -67,6 +61,10 @@ mounter --all
 ```bash
 mounter --all --no-filter
 ```
+
+# Configuration
+
+See [Configuration](./CONFIGURATION.md) for configuration.
 
 # TODO
 
