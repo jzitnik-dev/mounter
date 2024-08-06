@@ -5,7 +5,7 @@ You can configure mounter from cli.
 Example:
 
 ```bash
-mounter --config-set rofi.use true
+mounter --config-set dmenu.use true
 ```
 
 ## Configuration list
