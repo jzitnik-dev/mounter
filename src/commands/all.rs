@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::process::{exit, Command};
 use std::str;
 
+use crate::preferences::config::get_value;
 use crate::preferences::mount_point::MountPoint;
+use crate::preferences::preferences::Preferences;
+use crate::utils::dmenu::{run_dmenu_global, run_dmenu_list};
 use crate::utils::mounting::{mount, umount_addr};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,7 +17,12 @@ struct Partition {
     mountpoint: String,
 }
 
-pub fn all(no_filter: bool, sudo: bool) {
+pub fn all(no_filter: bool, prefs: Preferences) {
+    let use_dmenu = match get_value(&prefs.config, "dmenu.use").as_str() {
+        "true" => true,
+        _ => false,
+    };
+
     // Idk better way to get all the drives
     let output = Command::new("sh")
         .arg("-c")
@@ -64,24 +72,47 @@ pub fn all(no_filter: bool, sudo: bool) {
         exit(1);
     }
 
-    let selection = Select::new()
-        .with_prompt("Choose a mount point")
-        .items(&options)
-        .default(0)
-        .interact()
-        .unwrap();
+    let selection = match use_dmenu {
+        true => {
+            let value = run_dmenu_list(&prefs, &options, "Select a mount point");
+
+            match options.iter().position(|x| x.trim() == &value) {
+                Some(index) => index,
+                None => panic!("Idk"),
+            }
+        }
+        false => Select::new()
+            .with_prompt("Choose a mount point")
+            .items(&options)
+            .default(0)
+            .interact()
+            .unwrap(),
+    };
 
     let partition = partitions.get(selection).unwrap();
 
+    let use_sudo = match get_value(&prefs.config, "sudo").as_str() {
+        "true" => true,
+        _ => false,
+    };
+
     if partition.mountpoint != "N/A" {
-        umount_addr(&partition.mountpoint, sudo);
+        umount_addr(&partition.mountpoint, use_sudo, use_dmenu);
         return;
     }
 
-    let mount_location: String = Input::new()
-        .with_prompt("Enter mount location (for example /mnt)")
-        .interact_text()
-        .expect("Failed to read line");
+    let mount_location: String = match use_dmenu {
+        true => run_dmenu_global(
+            // This is very wacky
+            &prefs,
+            String::from("echo \"\""),
+            "Enter mount location (for example /mnt)",
+        ),
+        false => Input::new()
+            .with_prompt("Enter mount location (for example /mnt)")
+            .interact_text()
+            .expect("Failed to read line"),
+    };
 
     let address = format!("/dev/{}", partition.name);
 
@@ -89,8 +120,8 @@ pub fn all(no_filter: bool, sudo: bool) {
         name: "".to_string(),
         address,
         mount_location,
-        flags: "".to_string()
+        flags: "".to_string(),
     };
 
-    mount(&mount_point, sudo);
+    mount(&mount_point, use_sudo, use_dmenu);
 }
