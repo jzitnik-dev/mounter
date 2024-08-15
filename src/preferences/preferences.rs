@@ -15,7 +15,7 @@ pub struct Preferences {
 
 impl Preferences {
     fn get_config_file_path(config: &Option<String>) -> PathBuf {
-        return match config {
+        match config {
             Some(config_path) => PathBuf::from(config_path),
             None => {
                 let mut config_path = config_dir().expect("Unable to determine config directory");
@@ -23,7 +23,7 @@ impl Preferences {
                 config_path.push("preferences.json");
                 config_path
             },
-        };
+        }
     }
 
     pub async fn load(config: &Option<String>) -> io::Result<Preferences> {

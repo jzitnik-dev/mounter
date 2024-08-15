@@ -56,7 +56,7 @@ mounter --all
 
 ### No filter
 
-`--all` flag filters drives that are currently mounted on `/`, `/boot` or `/home`. If you want to show these drives too use the `--no-filter flag`.
+`--all` flag filters drives that are currently mounted on `/`, `/boot` or `/home`. If you want to show these drives too use the `--no-filter` flag.
 
 ```bash
 mounter --all --no-filter
