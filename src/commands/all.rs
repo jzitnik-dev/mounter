@@ -15,6 +15,26 @@ struct Partition {
     size: String,
     fstype: String,
     mountpoint: String,
+    children: Option<Vec<Box<Partition>>>,
+}
+
+fn filter(partition: &Partition, no_filter: bool) -> bool {
+    if no_filter {
+        return true;
+    }
+
+    if partition.mountpoint.trim() == "/"
+        || partition.mountpoint == "/boot"
+        || partition.mountpoint == "/home"
+    {
+        return false;
+    }
+
+    if let Some(ref children) = partition.children {
+        return children.iter().any(|child| filter(child, no_filter));
+    }
+
+    true
 }
 
 pub fn all(no_filter: bool, prefs: Preferences) {
@@ -35,7 +55,8 @@ pub fn all(no_filter: bool, prefs: Preferences) {
                 name: .name, 
                 size: .size, 
                 fstype: (if .fstype == null then \"N/A\" else .fstype end), 
-                mountpoint: (if .mountpoint == null then \"N/A\" else .mountpoint end) 
+                mountpoint: (if .mountpoint == null then \"N/A\" else .mountpoint end),
+                children: .children
             }
         ]'",
         )
@@ -52,12 +73,7 @@ pub fn all(no_filter: bool, prefs: Preferences) {
 
     let options: Vec<String> = partitions
         .iter()
-        .filter(|part| {
-            no_filter
-                || part.mountpoint.trim() != "/"
-                    && part.mountpoint != "/boot"
-                    && part.mountpoint != "/home"
-        })
+        .filter(|part| filter(part, no_filter))
         .map(|part| {
             format!(
                 "{} {}",
