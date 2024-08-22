@@ -1,6 +1,7 @@
 use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
-use std::process::{exit, Command};
+use std::os::unix::process;
+use std::process::{self, exit, Command};
 use std::str;
 
 use crate::preferences::config::get_value;
@@ -94,7 +95,10 @@ pub fn all(no_filter: bool, prefs: Preferences) {
 
             match options.iter().position(|x| x.trim() == &value) {
                 Some(index) => index,
-                None => panic!("Idk"),
+                None => {
+                    eprintln!("Selected mount point is not in the list!");
+                    exit(1);
+                },
             }
         }
         false => Select::new()
