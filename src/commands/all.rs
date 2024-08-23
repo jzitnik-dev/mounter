@@ -1,7 +1,6 @@
 use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
-use std::os::unix::process;
-use std::process::{self, exit, Command};
+use std::process::{exit, Command};
 use std::str;
 
 use crate::preferences::config::get_value;
