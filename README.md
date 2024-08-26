@@ -13,7 +13,6 @@ Mounter can mount all of your external hard drives or even drives on a network. 
 - `lsblk` For --all command
 - `jq` Used in --all command for parsing output from lsblk
 - `pkexec` If you use sudo with dmenu enabled
-- `zenity` For asking for mount point password with dmenu enabled
 
 # Installation
 
