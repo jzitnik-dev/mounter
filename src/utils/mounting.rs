@@ -1,5 +1,8 @@
+use dialoguer::Password;
 use crate::preferences::mount_point::MountPoint;
 use std::process::{exit, Command};
+
+use super::dmenu::run_gui_password_dialog;
 
 pub fn mount(mount_point: &MountPoint, sudo: bool, use_dmenu: bool) {
     let mut command = if sudo {
@@ -26,6 +29,22 @@ pub fn mount(mount_point: &MountPoint, sudo: bool, use_dmenu: bool) {
         }
     }
 
+    if mount_point.ask_for_password == Some(true) {
+        let password = match use_dmenu {
+            true => run_gui_password_dialog().unwrap_or_else(|| {
+                eprintln!("Password dialog canceled!");
+                exit(1);
+            }),
+            false => Password::new()
+                .with_prompt("Enter password for your mount point")
+                .interact()
+                .expect("Failed to read password"),
+        };
+
+        command.arg("-o");
+        command.arg(format!("password={}", password));
+    }
+
     command.arg(&mount_point.address);
     command.arg(&mount_point.mount_location);
 
@@ -37,7 +56,6 @@ pub fn mount(mount_point: &MountPoint, sudo: bool, use_dmenu: bool) {
         exit(1);
     }
 }
-
 
 pub fn umount(mount_point: &MountPoint, sudo: bool, use_dmenu: bool) {
     umount_addr(&mount_point.mount_location, sudo, use_dmenu)

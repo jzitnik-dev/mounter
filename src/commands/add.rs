@@ -1,5 +1,5 @@
 use std::process;
-use dialoguer::Input;
+use dialoguer::{Confirm, Input};
 use crate::preferences::{mount_point::MountPoint, preferences::Preferences};
 
 pub async fn add(name: String, mut prefs: Preferences, config_file: &Option<String>) {
@@ -19,11 +19,18 @@ pub async fn add(name: String, mut prefs: Preferences, config_file: &Option<Stri
         .interact_text()
         .expect("Failed to read input");
 
+    let ask_for_password: bool = Confirm::new()
+        .with_prompt("Do you want to ask for a password?")
+        .default(false)
+        .interact()
+        .expect("Failed to read input");
+
     let mount_point = MountPoint {
         name,
         address: address.trim().to_owned(),
         mount_location: mount_location.trim().to_owned(),
         flags: flags.trim().to_owned(),
+        ask_for_password: Some(ask_for_password),
     };
 
     prefs.add_mount_point(mount_point, config_file).await.unwrap_or_else(|err| {

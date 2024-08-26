@@ -3,6 +3,22 @@ use std::str;
 
 use crate::preferences::{config::get_value, preferences::Preferences};
 
+pub fn run_gui_password_dialog() -> Option<String> {
+    let mut command = Command::new("zenity");
+    command.arg("--password");
+    command.arg("--title=\"Enter password for your mount point\"");
+
+    let output = command.output().expect("Failed to execute command");
+
+    let mut log = String::new();
+    log.push_str(match str::from_utf8(&output.stdout) {
+        Ok(val) => val,
+        Err(_) => panic!("got non UTF-8 data"),
+    });
+
+    return Some(log.trim().to_owned());
+}
+
 pub fn run_dmenu_list(prefs: &Preferences, options: &Vec<String>, message: &str) -> String {
     let echo_command = format!("echo -e '{}'", options.join("\\n"));
 

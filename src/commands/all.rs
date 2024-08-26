@@ -97,7 +97,7 @@ pub fn all(no_filter: bool, prefs: Preferences) {
                 None => {
                     eprintln!("Selected mount point is not in the list!");
                     exit(1);
-                },
+                }
             }
         }
         false => Select::new()
@@ -140,6 +140,7 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         address,
         mount_location,
         flags: "".to_string(),
+        ask_for_password: None,
     };
 
     mount(&mount_point, use_sudo, use_dmenu);
