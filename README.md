@@ -2,7 +2,7 @@
 
 Simple Rust program for mounting drives on Linux.
 
-# Installtion
+# Installation
 
 Download binary form Github releases and add it to PATH.
 
