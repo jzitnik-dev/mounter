@@ -143,5 +143,5 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         ask_for_password: None,
     };
 
-    mount(&mount_point, use_sudo, use_dmenu);
+    mount(&mount_point, &prefs, use_sudo, use_dmenu);
 }

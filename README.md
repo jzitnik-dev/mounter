@@ -2,6 +2,8 @@
 
 Simple Rust program for mounting drives on Linux.
 
+Mounter can mount all of your external hard drives or even drives on a network. You can save your mount points for example your NAS and then you just simply mount it with mounter.
+
 # Dependencies/Programs needed
 
 - `mount` For mounting drives
@@ -76,6 +78,12 @@ mounter --all --no-filter
 # Configuration
 
 See [Configuration](./CONFIGURATION.md) for configuration.
+
+# Notice
+
+If you use ask_for_password and use dmenu there is a change that your password will be shown in the polkit dialog.
+
+It really depends on how long the command is because the password is inserted directly to the command and then pkexec shows part of the command in the dialog.
 
 # TODO
 

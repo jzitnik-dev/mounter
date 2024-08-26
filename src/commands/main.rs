@@ -57,6 +57,6 @@ pub fn main(prefs: Preferences) {
     if mounted {
         umount(mount_point, use_sudo, use_dmenu);
     } else {
-        mount(mount_point, use_sudo, use_dmenu);
+        mount(mount_point, &prefs, use_sudo, use_dmenu);
     }
 }

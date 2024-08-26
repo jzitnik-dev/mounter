@@ -3,10 +3,50 @@ use std::str;
 
 use crate::preferences::{config::get_value, preferences::Preferences};
 
-pub fn run_gui_password_dialog() -> Option<String> {
-    let mut command = Command::new("zenity");
-    command.arg("--password");
-    command.arg("--title=\"Enter password for your mount point\"");
+pub fn run_gui_password_dialog(dialog: String) -> Option<String> {
+    let mut command = match dialog.as_str() {
+        "zenity" => {
+            let mut command = Command::new("zenity");
+            command.arg("--password");
+            command.arg("--title=\"Enter password for your mount point\"");
+
+            command
+        }
+        "yad" => {
+            let mut command = Command::new("yad");
+            command.arg("--entry");
+            command.arg("--hide-text");
+            command.arg("--title=\"Enter password for your mount point\"");
+            command.arg("--text=\"Enter password for your mount point:\"");
+            command.arg("--width=300");
+
+            command
+        }
+        "kdialog" => {
+            let mut command = Command::new("kdialog");
+            command.arg("--password");
+            command.arg("Enter password for your mount point");
+
+            command
+        }
+        "rofi" => {
+            let mut command = Command::new("rofi");
+            command.arg("-dmenu");
+            command.arg("-p");
+            command.arg("Enter password for your mount point");
+            command.arg("-theme-str");
+            command.arg("entry {placeholder-text: \"Enter your password\";}");
+            command.arg("-password");
+            command.arg("-lines");
+            command.arg("1");
+
+            command
+        }
+        _ => {
+            eprintln!("Invalid gui password dialog.");
+            exit(1);
+        }
+    };
 
     let output = command.output().expect("Failed to execute command");
 
@@ -16,7 +56,13 @@ pub fn run_gui_password_dialog() -> Option<String> {
         Err(_) => panic!("got non UTF-8 data"),
     });
 
-    return Some(log.trim().to_owned());
+    log = log.trim().to_string();
+
+    if log.len() == 0 {
+        return None;
+    }
+
+    Some(log)
 }
 
 pub fn run_dmenu_list(prefs: &Preferences, options: &Vec<String>, message: &str) -> String {

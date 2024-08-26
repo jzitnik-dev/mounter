@@ -21,6 +21,10 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
             }
         }
         "dmenu.flags" => ValidationResult::Correct,
+        "gui_password_dialog" => match value {
+            "yanity" | "yad" | "kdialog" => ValidationResult::Correct,
+            _ => ValidationResult::ValueError,
+        },
         _ => ValidationResult::KeyError,
     }
 }
@@ -31,6 +35,7 @@ pub fn get_value(config: &HashMap<String, String>, key: &str) -> String {
         ("dmenu.use", "false"),
         ("dmenu.command", "dmenu"),
         ("dmenu.flags", ""),
+        ("gui_password_dialog", "rofi"),
     ]
     .iter()
     .cloned()
