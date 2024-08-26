@@ -2,6 +2,17 @@
 
 Simple Rust program for mounting drives on Linux.
 
+# Dependencies/Programs needed
+
+- `mount` For mounting drives
+- `umount` For unmounting drives
+- `dmenu/rofi` If you want to use dmenu
+- `sh` For executing scripts
+- `lsblk` For --all command
+- `jq` Used in --all command for parsing output from lsblk
+- `pkexec` If you use sudo with dmenu enabled
+- `zenity` For asking for mount point password with dmenu enabled
+
 # Installation
 
 Download binary form Github releases and add it to PATH.
