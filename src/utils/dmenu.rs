@@ -66,7 +66,7 @@ pub fn run_gui_password_dialog(pref: &Preferences) -> Option<String> {
                 exit(1);
             });
 
-            let final_flags = flag_merge(&flags, &user_flags);
+            let final_flags = flag_merge(&flags, &user_flags, &vec![]);
 
             add_flags(&mut command, final_flags);
 
@@ -115,7 +115,7 @@ pub fn run_dmenu_global(prefs: &Preferences, echo_command: String, message: &str
         exit(1);
     });
 
-    let final_flags = flag_merge(&default_flags, &user_flags);
+    let final_flags = flag_merge(&default_flags, &user_flags, &vec![]);
     let final_flags_str = stringify_flags(final_flags);
     shell_command.push_str(&format!(" {}", final_flags_str));
 

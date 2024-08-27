@@ -52,3 +52,17 @@ dmenu does not support password dialog as far as I know.
 ### dmenu.password_dialog.rofi.flags
 
 Custom flags for rofi when dmenu.password_dialog.program is set to "rofi". Flags are seperated by `;`. Same format as in dmenu.flags.
+
+### mount.flags
+
+Custom flags for mount command that mounts the drive. They are merged with flags property in the mount point.
+
+##### Use case:
+
+I personally use this like this:
+
+`-o uid=kuba,gid=kuba`
+
+So all of the drives that I mount in my Linux machine is owned by my user.
+
+Flags are seperated by `;`. Same format as in dmenu.flags.

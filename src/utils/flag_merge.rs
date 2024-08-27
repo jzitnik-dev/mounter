@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{collections::HashSet, process::Command};
 
 #[derive(Clone, Debug)]
 pub struct Flag {
@@ -6,25 +6,19 @@ pub struct Flag {
     pub value: Option<String>,
 }
 
-pub fn flag_merge(flags1: &Vec<Flag>, flags2: &Vec<Flag>) -> Vec<Flag> {
-    let mut final_flags = flags1.to_vec();
+pub fn flag_merge(flags1: &Vec<Flag>, flags2: &Vec<Flag>, ignore_merge: &Vec<String>) -> Vec<Flag> {
+    let names: HashSet<String> = flags2.iter().map(|flag| flag.name.clone()).collect();
+    let mut finalvec = flags2.to_vec();
 
-    for flag2 in flags2 {
-        let mut found = false;
-        for flag1 in &mut final_flags {
-            if flag1.name == flag2.name {
-                flag1.value = flag2.value.clone();
-                found = true;
-                break;
-            }
-        }
-
-        if !found {
-            final_flags.push(flag2.clone());
+    for flag in flags1 {
+        if ignore_merge.contains(&flag.name) {
+            finalvec.push(flag.clone());
+        } else if names.contains(&flag.name) {
+            continue;
         }
     }
 
-    final_flags
+    finalvec
 }
 
 pub fn parse_flags(flags: String) -> Result<Vec<Flag>, String> {

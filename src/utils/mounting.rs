@@ -1,10 +1,18 @@
+use crate::{
+    preferences::{config::get_value, mount_point::MountPoint, preferences::Preferences},
+    utils::flag_merge::Flag,
+};
 use dialoguer::Password;
-use crate::preferences::{mount_point::MountPoint, preferences::Preferences};
 use std::process::{exit, Command};
 
-use super::dmenu::run_gui_password_dialog;
+use super::{
+    dmenu::run_gui_password_dialog,
+    flag_merge::{add_flags, flag_merge, parse_flags},
+};
 
 pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, use_dmenu: bool) {
+    let global_flags_config = get_value(&preferences.config, "mount.flags");
+
     let mut command = if sudo {
         if use_dmenu {
             let mut cmd = Command::new("pkexec");
@@ -19,31 +27,41 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, us
         Command::new("mount")
     };
 
-    // Add flags to the command if they exist
-    if !mount_point.flags.trim().is_empty() {
-        let flags: Vec<&str> = mount_point.flags.split(';').collect();
-        for flag in flags {
-            for flagx in flag.split_whitespace() {
-                command.arg(flagx);
-            }
+    let default_flags = match mount_point.ask_for_password == Some(true) {
+        true => {
+            let password = match use_dmenu {
+                true => run_gui_password_dialog(&preferences).unwrap_or_else(|| {
+                    eprintln!("Password dialog canceled!");
+                    exit(1);
+                }),
+                false => Password::new()
+                    .with_prompt("Enter password for your mount point")
+                    .interact()
+                    .expect("Failed to read password"),
+            };
+
+            vec![Flag {
+                name: String::from("-o"),
+                value: Some(format!("password={}", password)),
+            }]
         }
-    }
+        false => vec![],
+    };
 
-    if mount_point.ask_for_password == Some(true) {
-        let password = match use_dmenu {
-            true => run_gui_password_dialog(&preferences).unwrap_or_else(|| {
-                eprintln!("Password dialog canceled!");
-                exit(1);
-            }),
-            false => Password::new()
-                .with_prompt("Enter password for your mount point")
-                .interact()
-                .expect("Failed to read password"),
-        };
+    let mount_point_flags = parse_flags(mount_point.flags.clone()).unwrap_or_else(|e| {
+        eprintln!("Error while parsing mount point flags: {}", e);
+        exit(1);
+    });
+    let global_flags = parse_flags(global_flags_config).unwrap_or_else(|e| {
+        eprintln!("Error while parsing mount flags: {}", e);
+        exit(1);
+    });
 
-        command.arg("-o");
-        command.arg(format!("password={}", password));
-    }
+    let merge_ignore = vec!["-o".to_owned()];
+    let flags1 = flag_merge(&default_flags, &global_flags, &merge_ignore);
+    let flags2 = flag_merge(&flags1, &mount_point_flags, &merge_ignore);
+
+    add_flags(&mut command, flags2);
 
     command.arg(&mount_point.address);
     command.arg(&mount_point.mount_location);

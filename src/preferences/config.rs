@@ -9,6 +9,9 @@ pub enum ValidationResult {
 
 pub fn is_valid(key: &str, value: &str) -> ValidationResult {
     match key {
+        "dmenu.password_dialog.rofi.flags" | "mount.flags" | "dmenu.flags" => {
+            ValidationResult::Correct
+        }
         "sudo" | "dmenu.use" => match value {
             "true" | "false" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
@@ -20,12 +23,10 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
                 ValidationResult::ValueError
             }
         }
-        "dmenu.flags" => ValidationResult::Correct,
         "dmenu.password_dialog.program" => match value {
             "yanity" | "yad" | "kdialog" | "rofi" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
         },
-        "dmenu.password_dialog.rofi.flags" => ValidationResult::Correct,
         _ => ValidationResult::KeyError,
     }
 }
@@ -38,6 +39,7 @@ pub fn get_value(config: &HashMap<String, String>, key: &str) -> String {
         ("dmenu.flags", ""),
         ("dmenu.password_dialog.program", "rofi"),
         ("dmenu.password_dialog.rofi.flags", ""),
+        ("mount.flags", ""),
     ]
     .iter()
     .cloned()
