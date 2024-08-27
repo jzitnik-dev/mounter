@@ -11,10 +11,8 @@ pub fn flag_merge(flags1: &Vec<Flag>, flags2: &Vec<Flag>, ignore_merge: &Vec<Str
     let mut finalvec = flags2.to_vec();
 
     for flag in flags1 {
-        if ignore_merge.contains(&flag.name) {
+        if !names.contains(&flag.name) || ignore_merge.contains(&flag.name) {
             finalvec.push(flag.clone());
-        } else if names.contains(&flag.name) {
-            continue;
         }
     }
 
