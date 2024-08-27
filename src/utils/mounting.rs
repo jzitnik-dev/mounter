@@ -1,5 +1,5 @@
 use dialoguer::Password;
-use crate::preferences::{config::get_value, mount_point::MountPoint, preferences::Preferences};
+use crate::preferences::{mount_point::MountPoint, preferences::Preferences};
 use std::process::{exit, Command};
 
 use super::dmenu::run_gui_password_dialog;
@@ -31,7 +31,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, us
 
     if mount_point.ask_for_password == Some(true) {
         let password = match use_dmenu {
-            true => run_gui_password_dialog(get_value(&preferences.config, "gui_password_dialog")).unwrap_or_else(|| {
+            true => run_gui_password_dialog(&preferences).unwrap_or_else(|| {
                 eprintln!("Password dialog canceled!");
                 exit(1);
             }),

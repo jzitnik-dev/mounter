@@ -1,9 +1,13 @@
 use std::process::{exit, Command};
-use std::str;
+use std::{str, vec};
 
 use crate::preferences::{config::get_value, preferences::Preferences};
 
-pub fn run_gui_password_dialog(dialog: String) -> Option<String> {
+use super::flag_merge::{add_flags, flag_merge, parse_flags, stringify_flags, Flag};
+
+pub fn run_gui_password_dialog(pref: &Preferences) -> Option<String> {
+    let dialog = get_value(&pref.config, "dmenu.password_dialog.program");
+
     let mut command = match dialog.as_str() {
         "zenity" => {
             let mut command = Command::new("zenity");
@@ -31,14 +35,40 @@ pub fn run_gui_password_dialog(dialog: String) -> Option<String> {
         }
         "rofi" => {
             let mut command = Command::new("rofi");
-            command.arg("-dmenu");
-            command.arg("-p");
-            command.arg("Enter password for your mount point");
-            command.arg("-theme-str");
-            command.arg("entry {placeholder-text: \"Enter your password\";}");
-            command.arg("-password");
-            command.arg("-lines");
-            command.arg("1");
+
+            let userflags = get_value(&pref.config, "dmenu.password_dialog.rofi.flags");
+            let flags = vec![
+                Flag {
+                    name: String::from("-dmenu"),
+                    value: None,
+                },
+                Flag {
+                    name: String::from("-p"),
+                    value: Some(String::from("Enter password for your mount point")),
+                },
+                Flag {
+                    name: String::from("-theme-str"),
+                    value: Some(String::from(
+                        "entry {placeholder-text: \"Enter your password\";}",
+                    )),
+                },
+                Flag {
+                    name: String::from("-password"),
+                    value: None,
+                },
+                Flag {
+                    name: String::from("-lines"),
+                    value: Some(String::from("1")),
+                },
+            ];
+            let user_flags = parse_flags(userflags).unwrap_or_else(|e| {
+                eprintln!("Error while parsing flags: {}", e);
+                exit(1);
+            });
+
+            let final_flags = flag_merge(&flags, &user_flags);
+
+            add_flags(&mut command, final_flags);
 
             command
         }
@@ -76,11 +106,18 @@ pub fn run_dmenu_global(prefs: &Preferences, echo_command: String, message: &str
     let dmenu_flags = get_value(&prefs.config, "dmenu.flags");
     let mut shell_command = format!("{} | {}", echo_command, dmenu_command);
 
-    if !dmenu_flags.trim().is_empty() {
-        shell_command.push_str(&format!(" {}", dmenu_flags.replace(";", " ")));
-    }
+    let default_flags = vec![Flag {
+        name: String::from("-p"),
+        value: Some(format!("\"{}\"", message)),
+    }];
+    let user_flags = parse_flags(dmenu_flags).unwrap_or_else(|e| {
+        eprintln!("Error while parsing flags: {}", e);
+        exit(1);
+    });
 
-    shell_command.push_str(&format!(" -p \"{}\"", message));
+    let final_flags = flag_merge(&default_flags, &user_flags);
+    let final_flags_str = stringify_flags(final_flags);
+    shell_command.push_str(&format!(" {}", final_flags_str));
 
     let mut command = Command::new("sh");
     command.arg("-c").arg(shell_command);
