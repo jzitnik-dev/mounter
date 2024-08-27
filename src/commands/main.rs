@@ -4,12 +4,12 @@ use crate::utils::dmenu::run_dmenu_list;
 use crate::utils::is_mounted::is_mounted;
 use crate::utils::mounting::{mount, umount};
 use dialoguer::Select;
-use std::process;
+use std::process::exit;
 
 pub fn main(prefs: Preferences) {
     if prefs.saved_mount_points.len() == 0 {
         eprint!("No mount points are saved!");
-        process::exit(1);
+        exit(1);
     }
 
     let use_dmenu = match get_value(&prefs.config, "dmenu.use").as_str() {
@@ -35,7 +35,10 @@ pub fn main(prefs: Preferences) {
 
             match options.iter().position(|x| x == &value) {
                 Some(index) => index,
-                None => panic!("Idk"),
+                None => {
+                    eprintln!("Selected mount point is not in the list!");
+                    exit(1);
+                },
             }
         }
         false => Select::new()

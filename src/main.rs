@@ -10,7 +10,7 @@ use std::process;
 #[derive(Parser, Debug)]
 #[command(
     name = "mounter",
-    version = "0.1.1",
+    version = env!("CARGO_PKG_VERSION"),
     about = "Simple program for mounting your drives on Linux.",
     group = ArgGroup::new("command")
         .args(&["list", "add", "remove", "config_set"])
