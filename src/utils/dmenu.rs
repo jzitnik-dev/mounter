@@ -133,7 +133,7 @@ pub fn run_dmenu_global(prefs: &Preferences, echo_command: String, message: &str
     let mut log = String::new();
     log.push_str(match str::from_utf8(&output.stdout) {
         Ok(val) => val,
-        Err(_) => panic!("got non UTF-8 data"),
+        Err(_) => panic!("Got non UTF-8 data from command"),
     });
 
     String::from(log.trim())
