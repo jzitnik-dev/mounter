@@ -2,7 +2,7 @@ mod preferences;
 mod commands;
 mod utils;
 
-use commands::{add::add, all::all, list::list, main::main as mainCommand, remove::remove, set_config::set_config};
+use commands::{add::add, all::all, get_config::get_config, list::list, main::main as mainCommand, remove::remove, set_config::set_config};
 use preferences::preferences::Preferences;
 use clap::{command, ArgGroup, Parser};
 use std::process;
@@ -37,6 +37,9 @@ struct Cli {
 
     #[arg(long = "config-set", help = "Set a configuration value.", value_names = &["KEY", "VALUE"])]
     config_set: Option<Vec<String>>,
+
+    #[arg(long = "config-get", help = "Get the config value.", value_names = &["KEY"])]
+    config_get: Option<String>,
 }
 
 #[tokio::main]
@@ -68,9 +71,14 @@ async fn main() {
         return;
     }
 
-    if cli.config_set.is_some()  {
+    if cli.config_set.is_some() {
         set_config(loaded_prefs, cli.config_set.unwrap(), &cli.config_file).await;
         return
+    }
+
+    if cli.config_get.is_some() {
+        get_config(loaded_prefs, cli.config_get.unwrap()).await;
+        return;
     }
 
     // Main

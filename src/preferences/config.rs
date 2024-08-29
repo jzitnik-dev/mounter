@@ -31,7 +31,12 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
     }
 }
 
-pub fn get_value(config: &HashMap<String, String>, key: &str) -> String {
+pub enum IsPresentResponse {
+    Present(String),
+    NotPresent(String),
+}
+
+pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentResponse {
     let defaults: HashMap<&str, &str> = [
         ("sudo", "false"),
         ("dmenu.use", "false"),
@@ -45,10 +50,22 @@ pub fn get_value(config: &HashMap<String, String>, key: &str) -> String {
     .cloned()
     .collect();
 
-    config.get(key).cloned().unwrap_or_else(|| {
-        defaults
-            .get(key)
-            .map(|&v| v.to_string())
-            .expect("Invalid key provided!")
-    })
+    let conf = config.get(key);
+
+    match conf.is_some() {
+        true => IsPresentResponse::Present(conf.cloned().unwrap()),
+        false => IsPresentResponse::NotPresent(
+            defaults
+                .get(key)
+                .map(|&v| v.to_string())
+                .expect("Invalid key provided!"),
+        ),
+    }
+}
+
+pub fn get_value(config: &HashMap<String, String>, key: &str) -> String {
+    match is_present(config, key) {
+        IsPresentResponse::Present(value) => value,
+        IsPresentResponse::NotPresent(value) => value,
+    }
 }

@@ -8,11 +8,11 @@ pub async fn set_config(mut prefs: Preferences, options: Vec<String>, config_fil
 
     match is_valid(key, &value) {
         ValidationResult::ValueError => {
-            println!("Invalid value in \"{}\" reading \"{}\".", key, value);
+            eprintln!("Invalid value in \"{}\" reading \"{}\".", key, value);
             process::exit(1);
         }
         ValidationResult::KeyError => {
-            println!("Invalid key \"{}\".", key);
+            eprintln!("Invalid key \"{}\".", key);
             process::exit(1);
         }
         ValidationResult::Correct => {}

@@ -8,6 +8,14 @@ Example:
 mounter --config-set dmenu.use true
 ```
 
+You can also read the configuration.
+
+Example
+
+```bash
+mounter --config-get dmenu.use
+```
+
 ## Configuration list
 
 ### sudo
@@ -57,12 +65,12 @@ Custom flags for rofi when dmenu.password_dialog.program is set to "rofi". Flags
 
 Custom flags for mount command that mounts the drive. They are merged with flags property in the mount point.
 
+Flags are seperated by `;`. Same format as in dmenu.flags.
+
 ##### Use case:
 
 I personally use this like this:
 
-`-o uid=kuba,gid=kuba`
+`-o uid=1000,gid=1000`
 
 So all of the drives that I mount in my Linux machine is owned by my user.
-
-Flags are seperated by `;`. Same format as in dmenu.flags.
