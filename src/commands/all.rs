@@ -76,8 +76,9 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         .filter(|part| filter(part, no_filter))
         .map(|part| {
             format!(
-                "{} {}",
+                "Name: {}, Size: {}  {}",
                 part.name,
+                part.size,
                 if part.mountpoint != "N/A" { "*" } else { "" }
             )
         })
