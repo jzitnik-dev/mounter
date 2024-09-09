@@ -7,6 +7,7 @@ use crate::preferences::config::get_value;
 use crate::preferences::mount_point::MountPoint;
 use crate::preferences::preferences::Preferences;
 use crate::utils::dmenu::{run_dmenu_global, run_dmenu_list};
+use crate::utils::logging::{console_error, console_log};
 use crate::utils::mounting::{mount, umount_addr};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -85,7 +86,7 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         .collect();
 
     if options.len() == 0 {
-        println!("No drives were found!");
+        console_log(&prefs.config, "No drives were found!");
         exit(1);
     }
 
@@ -96,7 +97,7 @@ pub fn all(no_filter: bool, prefs: Preferences) {
             match options.iter().position(|x| x.trim() == &value) {
                 Some(index) => index,
                 None => {
-                    eprintln!("Selected mount point is not in the list!");
+                    console_error(&prefs.config, "Selected mount point is not in the list!");
                     exit(1);
                 }
             }
@@ -111,13 +112,8 @@ pub fn all(no_filter: bool, prefs: Preferences) {
 
     let partition = partitions.get(selection).unwrap();
 
-    let use_sudo = match get_value(&prefs.config, "sudo").as_str() {
-        "true" => true,
-        _ => false,
-    };
-
     if partition.mountpoint != "N/A" {
-        umount_addr(&partition.mountpoint, use_sudo, use_dmenu);
+        umount_addr(&partition.mountpoint, &prefs.config);
         return;
     }
 
@@ -144,5 +140,5 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         ask_for_password: None,
     };
 
-    mount(&mount_point, &prefs, use_sudo, use_dmenu);
+    mount(&mount_point, &prefs);
 }

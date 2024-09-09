@@ -52,14 +52,9 @@ pub fn main(prefs: Preferences) {
     let mount_point = prefs.saved_mount_points.get(selection).unwrap();
     let mounted = is_mounted(&mount_point.address);
 
-    let use_sudo = match get_value(&prefs.config, "sudo").as_str() {
-        "true" => true,
-        _ => false,
-    };
-
     if mounted {
-        umount(mount_point, use_sudo, use_dmenu);
+        umount(mount_point, &prefs.config);
     } else {
-        mount(mount_point, &prefs, use_sudo, use_dmenu);
+        mount(mount_point, &prefs);
     }
 }

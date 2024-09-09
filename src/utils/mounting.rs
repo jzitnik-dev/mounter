@@ -1,17 +1,29 @@
 use crate::{
     preferences::{config::get_value, mount_point::MountPoint, preferences::Preferences},
-    utils::flag_merge::Flag,
+    utils::{flag_merge::Flag, logging::console_error},
 };
 use dialoguer::Password;
-use std::process::{exit, Command};
+use std::{
+    collections::HashMap,
+    process::{exit, Command},
+};
 
 use super::{
     dmenu::run_gui_password_dialog,
     flag_merge::{add_flags, flag_merge, parse_flags},
+    logging::console_log,
 };
 
-pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, use_dmenu: bool) {
+pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     let global_flags_config = get_value(&preferences.config, "mount.flags");
+    let sudo = match get_value(&preferences.config, "sudo").as_str() {
+        "true" => true,
+        _ => false,
+    };
+    let use_dmenu = match get_value(&preferences.config, "dmenu.use").as_str() {
+        "true" => true,
+        _ => false,
+    };
 
     let mut command = if sudo {
         if use_dmenu {
@@ -31,7 +43,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, us
         true => {
             let password = match use_dmenu {
                 true => run_gui_password_dialog(&preferences).unwrap_or_else(|| {
-                    eprintln!("Password dialog canceled!");
+                    console_error(&preferences.config, "Password dialog canceled!");
                     exit(1);
                 }),
                 false => Password::new()
@@ -49,11 +61,17 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, us
     };
 
     let mount_point_flags = parse_flags(mount_point.flags.clone()).unwrap_or_else(|e| {
-        eprintln!("Error while parsing mount point flags: {}", e);
+        console_error(
+            &preferences.config,
+            format!("Error while parsing mount point flags: {}", e).as_str(),
+        );
         exit(1);
     });
     let global_flags = parse_flags(global_flags_config).unwrap_or_else(|e| {
-        eprintln!("Error while parsing mount flags: {}", e);
+        console_error(
+            &preferences.config,
+            format!("Error while parsing mount flags: {}", e).as_str(),
+        );
         exit(1);
     });
 
@@ -69,17 +87,35 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences, sudo: bool, us
     let output = command.output().expect("Failed to execute command");
 
     if !output.status.success() {
-        eprintln!("Mount failed with status: {}", output.status);
+        console_error(
+            &preferences.config,
+            format!("Mount failed with status: {}", output.status).as_str(),
+        );
         eprintln!("Stderr: {}", String::from_utf8_lossy(&output.stderr));
         exit(1);
     }
+
+    console_log(
+        &preferences.config,
+        format!("Drive {} was mounted successfully!", mount_point.address).as_str(),
+    )
 }
 
-pub fn umount(mount_point: &MountPoint, sudo: bool, use_dmenu: bool) {
-    umount_addr(&mount_point.mount_location, sudo, use_dmenu)
+pub fn umount(mount_point: &MountPoint, config: &HashMap<String, String>) {
+    umount_addr(&mount_point.mount_location, config)
 }
 
-pub fn umount_addr(mount_location: &str, sudo: bool, use_dmenu: bool) {
+pub fn umount_addr(mount_location: &str, config: &HashMap<String, String>) {
+    let sudo = match get_value(config, "sudo").as_str() {
+        "true" => true,
+        _ => false,
+    };
+
+    let use_dmenu = match get_value(config, "dmenu.use").as_str() {
+        "true" => true,
+        _ => false,
+    };
+
     let mut command = if sudo {
         if use_dmenu {
             let mut cmd = Command::new("pkexec");
