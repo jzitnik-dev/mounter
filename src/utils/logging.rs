@@ -46,7 +46,7 @@ pub fn console_log(config: &HashMap<String, String>, message: &str) {
     let config_type = get_value(config, "logging.program");
 
     if config_type == "cli" {
-        eprintln!("{}", message);
+        println!("{}", message);
     }
 
     if config_type == "notify" {
