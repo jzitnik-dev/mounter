@@ -9,9 +9,10 @@ pub enum ValidationResult {
 
 pub fn is_valid(key: &str, value: &str) -> ValidationResult {
     match key {
-        "dmenu.password_dialog.rofi.flags" | "mount.flags" | "dmenu.flags" => {
-            ValidationResult::Correct
-        }
+        "dmenu.password_dialog.rofi.flags"
+        | "mount.flags"
+        | "dmenu.flags"
+        | "logging.program.notify.flags" => ValidationResult::Correct,
         "sudo" | "dmenu.use" => match value {
             "true" | "false" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
@@ -30,7 +31,7 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
         "logging.program" => match value {
             "cli" | "notify" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
-        }
+        },
         _ => ValidationResult::KeyError,
     }
 }
@@ -50,7 +51,7 @@ pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentRespo
         ("dmenu.password_dialog.rofi.flags", ""),
         ("mount.flags", ""),
         ("logging.program", "cli"),
-        ("logging.program.notify.flags", "")
+        ("logging.program.notify.flags", ""),
     ]
     .iter()
     .cloned()
