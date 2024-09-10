@@ -27,6 +27,10 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
             "yanity" | "yad" | "kdialog" | "rofi" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
         },
+        "logging.program" => match value {
+            "cli" | "notify" => ValidationResult::Correct,
+            _ => ValidationResult::ValueError,
+        }
         _ => ValidationResult::KeyError,
     }
 }
@@ -45,6 +49,8 @@ pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentRespo
         ("dmenu.password_dialog.program", "rofi"),
         ("dmenu.password_dialog.rofi.flags", ""),
         ("mount.flags", ""),
+        ("logging.program", "cli"),
+        ("logging.program.notify.flags", "")
     ]
     .iter()
     .cloned()
