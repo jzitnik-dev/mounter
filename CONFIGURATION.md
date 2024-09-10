@@ -74,3 +74,18 @@ I personally use this like this:
 `-o uid=1000,gid=1000`
 
 So all of the drives that I mount in my Linux machine is owned by my user.
+
+### logging.program
+
+What should be used for messages and logging.
+
+**Values**: "cli", "notify"
+**Default**: "cli"
+
+Notify will send notify-send for the message but cli will just log it in stdout.
+
+### logging.program.notify.flags
+
+Custom flags when running notify-send when logging.program is set to notify.
+
+Flags are seperated by `;`.
