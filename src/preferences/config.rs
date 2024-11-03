@@ -17,7 +17,7 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
             "true" | "false" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
         },
-        "dmenu.command" => {
+        "dmenu.command" | "sudo.command" => {
             if value.len() > 0 {
                 ValidationResult::Correct
             } else {
@@ -44,6 +44,7 @@ pub enum IsPresentResponse {
 pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentResponse {
     let defaults: HashMap<&str, &str> = [
         ("sudo", "false"),
+        ("sudo.command", "sudo"),
         ("dmenu.use", "false"),
         ("dmenu.command", "dmenu"),
         ("dmenu.flags", ""),
