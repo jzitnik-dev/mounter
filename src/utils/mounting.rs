@@ -20,6 +20,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
         "true" => true,
         _ => false,
     };
+    let sudo_command = get_value(&preferences.config, "sudo.command");
     let use_dmenu = match get_value(&preferences.config, "dmenu.use").as_str() {
         "true" => true,
         _ => false,
@@ -31,7 +32,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
             cmd.arg("mount");
             cmd
         } else {
-            let mut cmd = Command::new("sudo");
+            let mut cmd = Command::new(sudo_command);
             cmd.arg("mount");
             cmd
         }
@@ -110,7 +111,7 @@ pub fn umount_addr(mount_location: &str, config: &HashMap<String, String>) {
         "true" => true,
         _ => false,
     };
-
+    let sudo_command = get_value(config, "sudo.command");
     let use_dmenu = match get_value(config, "dmenu.use").as_str() {
         "true" => true,
         _ => false,
@@ -122,7 +123,7 @@ pub fn umount_addr(mount_location: &str, config: &HashMap<String, String>) {
             cmd.arg("umount");
             cmd
         } else {
-            let mut cmd = Command::new("sudo");
+            let mut cmd = Command::new(sudo_command);
             cmd.arg("umount");
             cmd
         }
@@ -139,4 +140,13 @@ pub fn umount_addr(mount_location: &str, config: &HashMap<String, String>) {
         eprintln!("Stderr: {}", String::from_utf8_lossy(&output.stderr));
         exit(1);
     }
+
+    console_log(
+        config,
+        format!(
+            "Drive that was mounted on {} was unmounted!",
+            mount_location
+        )
+        .as_str(),
+    )
 }

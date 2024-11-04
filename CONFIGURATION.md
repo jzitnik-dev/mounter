@@ -25,6 +25,13 @@ Use sudo (without dmenu) or polkit (with dmenu) while mounting/unmounting a driv
 **Values**: "true", "false"
 **Default**: "false"
 
+### sudo.command
+
+If you have `sudo` set to true this config says what program should be ran as a sudo. This config is mainly for doas users.
+
+**Values**: Any string
+**Default**: "sudo"
+
 ### dmenu.use
 
 Use dmenu
