@@ -17,7 +17,7 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
             "true" | "false" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
         },
-        "dmenu.command" | "sudo.command" => {
+        "dmenu.command" => {
             if value.len() > 0 {
                 ValidationResult::Correct
             } else {
@@ -43,8 +43,7 @@ pub enum IsPresentResponse {
 
 pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentResponse {
     let defaults: HashMap<&str, &str> = [
-        ("sudo", "false"),
-        ("sudo.command", "sudo"),
+        ("sudo", "true"),
         ("dmenu.use", "false"),
         ("dmenu.command", "dmenu"),
         ("dmenu.flags", ""),
@@ -60,14 +59,15 @@ pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentRespo
 
     let conf = config.get(key);
 
-    match conf.is_some() {
-        true => IsPresentResponse::Present(conf.cloned().unwrap()),
-        false => IsPresentResponse::NotPresent(
-            defaults
+    match conf {
+        Some(value) => IsPresentResponse::Present(value.clone()),
+        None => {
+            let value = defaults
                 .get(key)
                 .map(|&v| v.to_string())
-                .expect("Invalid key provided!"),
-        ),
+                .unwrap_or_else(|| panic!("Invalid key provided!"));
+            IsPresentResponse::NotPresent(value)
+        }
     }
 }
 

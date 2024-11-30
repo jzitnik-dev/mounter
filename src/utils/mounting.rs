@@ -1,64 +1,107 @@
 use crate::{
+    commands::all::Partition,
     preferences::{config::get_value, mount_point::MountPoint, preferences::Preferences},
     utils::{flag_merge::Flag, logging::console_error},
 };
 use dialoguer::Password;
-use std::{
-    collections::HashMap,
-    process::{exit, Command},
-};
+use std::process::{exit, Command};
 
 use super::{
     dmenu::run_gui_password_dialog,
     flag_merge::{add_flags, flag_merge, parse_flags},
     logging::console_log,
+    luks::{check_lusk, get_luks_name, lock, unlock},
+    sudo::ask_for_sudo,
 };
 
+pub fn is_mounted(partition: &Partition) -> bool {
+    if partition.fstype == Some("crypto_LUKS".to_owned()) {
+        if let Some(value) = &partition.children {
+            if let Some(first_child) = value.get(0) {
+                return first_child.to_owned().mountpoint.is_some();
+            }
+        }
+    }
+
+    partition.mountpoint.is_some()
+}
+
+// I fucking hate this code
+pub fn get_mountpoint(partition: &Partition) -> Option<String> {
+    if partition.fstype == Some("crypto_LUKS".to_owned()) {
+        if let Some(value) = &partition.children {
+            if let Some(first_child) = value.get(0) {
+                if let Some(mount_point) = &first_child.mountpoint {
+                    return Some(mount_point.to_string());
+                }
+            }
+        }
+    }
+
+    partition.mountpoint.clone()
+}
+
+// TODO: Fix mounting
+// The | in the command.arg does not work
 pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     let global_flags_config = get_value(&preferences.config, "mount.flags");
     let sudo = match get_value(&preferences.config, "sudo").as_str() {
         "true" => true,
         _ => false,
     };
-    let sudo_command = get_value(&preferences.config, "sudo.command");
     let use_dmenu = match get_value(&preferences.config, "dmenu.use").as_str() {
         "true" => true,
         _ => false,
     };
 
+    let user_password = if sudo {
+        Some(ask_for_sudo(use_dmenu, preferences))
+    } else {
+        None
+    };
+
+    let encrypted = check_lusk(&mount_point.address, &user_password);
+    if encrypted {
+        let passphrase = run_gui_password_dialog(&preferences, "Enter passphrase for the volume:")
+            .unwrap_or_else(|| {
+                console_error(&preferences.config, "Password dialog canceled!");
+                exit(1);
+            });
+        unlock(&user_password, &mount_point.address, passphrase);
+    }
+
     let mut command = if sudo {
-        if use_dmenu {
-            let mut cmd = Command::new("pkexec");
-            cmd.arg("mount");
-            cmd
-        } else {
-            let mut cmd = Command::new(sudo_command);
-            cmd.arg("mount");
-            cmd
-        }
+        let mut cmd = Command::new("echo");
+        cmd.arg(&user_password.unwrap());
+        cmd.arg("|");
+        cmd.arg("sudo");
+        cmd.arg("-S");
+        cmd.arg("mount");
+        cmd
     } else {
         Command::new("mount")
     };
 
-    let default_flags = match mount_point.ask_for_password == Some(true) {
-        true => {
-            let password = match use_dmenu {
-                true => run_gui_password_dialog(&preferences).unwrap_or_else(|| {
+    let default_flags = if mount_point.ask_for_password == Some(true) {
+        let password = if use_dmenu {
+            run_gui_password_dialog(&preferences, "Enter password for your mount point")
+                .unwrap_or_else(|| {
                     console_error(&preferences.config, "Password dialog canceled!");
                     exit(1);
-                }),
-                false => Password::new()
-                    .with_prompt("Enter password for your mount point")
-                    .interact()
-                    .expect("Failed to read password"),
-            };
+                })
+        } else {
+            Password::new()
+                .with_prompt("Enter password for your mount point")
+                .interact()
+                .expect("Failed to read password")
+        };
 
-            vec![Flag {
-                name: String::from("-o"),
-                value: Some(format!("password={}", password)),
-            }]
-        }
-        false => vec![],
+        vec![Flag {
+            name: String::from("-o"),
+            value: Some(format!("password={}", password)),
+        }]
+    } else {
+        vec![]
     };
 
     let mount_point_flags = parse_flags(mount_point.flags.clone()).unwrap_or_else(|e| {
@@ -82,7 +125,14 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
 
     add_flags(&mut command, flags2);
 
-    command.arg(&mount_point.address);
+    if encrypted {
+        command.arg(format!(
+            "/dev/mapper/{}",
+            get_luks_name(&mount_point.address)
+        ));
+    } else {
+        command.arg(&mount_point.address);
+    }
     command.arg(&mount_point.mount_location);
 
     let output = command.output().expect("Failed to execute command");
@@ -102,36 +152,48 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     )
 }
 
-pub fn umount(mount_point: &MountPoint, config: &HashMap<String, String>) {
-    umount_addr(&mount_point.mount_location, config)
+pub fn umount_partition(partition: &Partition, preferences: &Preferences) {
+    umount_addr(
+        &get_mountpoint(&partition).unwrap(),
+        &format!("/dev/{}", partition.name),
+        preferences,
+    )
 }
 
-pub fn umount_addr(mount_location: &str, config: &HashMap<String, String>) {
-    let sudo = match get_value(config, "sudo").as_str() {
+pub fn umount(mount_point: &MountPoint, preferences: &Preferences) {
+    umount_addr(
+        &mount_point.mount_location,
+        &mount_point.address,
+        preferences,
+    )
+}
+
+pub fn umount_addr(mount_location: &str, mount_address: &String, preferences: &Preferences) {
+    let sudo = match get_value(&preferences.config, "sudo").as_str() {
         "true" => true,
         _ => false,
     };
-    let sudo_command = get_value(config, "sudo.command");
-    let use_dmenu = match get_value(config, "dmenu.use").as_str() {
+    let use_dmenu = match get_value(&preferences.config, "dmenu.use").as_str() {
         "true" => true,
         _ => false,
+    };
+    let user_password = if sudo {
+        Some(ask_for_sudo(use_dmenu, preferences))
+    } else {
+        None
     };
 
     let mut command = if sudo {
-        if use_dmenu {
-            let mut cmd = Command::new("pkexec");
-            cmd.arg("umount");
-            cmd
-        } else {
-            let mut cmd = Command::new(sudo_command);
-            cmd.arg("umount");
-            cmd
-        }
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c").arg(format!(
+            "echo {} | sudo -S umount {}",
+            user_password.clone().unwrap(),
+            mount_location
+        ));
+        cmd
     } else {
         Command::new("umount")
     };
-
-    command.arg(mount_location);
 
     let output = command.output().expect("Failed to execute command");
 
@@ -141,8 +203,13 @@ pub fn umount_addr(mount_location: &str, config: &HashMap<String, String>) {
         exit(1);
     }
 
+    let encrypted = check_lusk(mount_address, &user_password);
+    if encrypted {
+        lock(&user_password, mount_address);
+    }
+
     console_log(
-        config,
+        &preferences.config,
         format!(
             "Drive that was mounted on {} was unmounted!",
             mount_location

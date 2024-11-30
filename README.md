@@ -4,6 +4,8 @@ Simple Rust program for mounting drives on Linux.
 
 Mounter can mount all of your external hard drives or even drives on a network. You can save your mount points for example your NAS and then you just simply mount it with mounter.
 
+It even supports disks encrypted by LUKS.
+
 # Dependencies/Programs needed
 
 - `mount` For mounting drives
@@ -12,7 +14,7 @@ Mounter can mount all of your external hard drives or even drives on a network. 
 - `sh` For executing scripts
 - `lsblk` For --all command
 - `jq` Used in --all command for parsing output from lsblk
-- `pkexec` If you use sudo with dmenu enabled
+- `cryptsetup` For LUKS support, needs to be installed even when not using LUKS.
 
 # Installation
 
@@ -78,44 +80,10 @@ mounter --all --no-filter
 
 See [Configuration](./CONFIGURATION.md) for configuration.
 
-# Notice
-
-If you use ask_for_password and use dmenu there is a change that your password will be shown in the polkit dialog.
-
-It really depends on how long the command is because the password is inserted directly to the command and then pkexec shows part of the command in the dialog.
-
 # TODO
 
 <details>
   <summary>Better error handling</summary>
   
   Just generaly better error handling. Better explained error descriptions.
-</details>
-
-<details>
-  <summary>Better ask_for_password implementation</summary>
-  
-  Better ask_for_password implementation for injecting the password to mount command.
-  
-  Right now the password from ask_for_password is injected to the mount command as a flag like this:
-
-```rust
-Flag {
-    name: String::from("-o"),
-    value: Some(format!("password={}", password)),
-}
-```
-
-This is not very good because the command is then shown in the polkit dialog by pkexec. So the part of the password or the entire password is shown there.
-
-I thought about saving the password to a file. and then linking the file to the mount command like this.
-
-```rust
-Flag {
-    name: String::from("-o"),
-    value: Some(format!("credentials={}", file_path)),
-}
-```
-
-But there are also some downsides. The main one is that the file could be left over on the file system for example on crash. Also the file would be readable by other programs and people easily. We could theoretically make the file owner root but then we whould have to create more password dialogs or running mounter fully as a root. (I dont want that.)
 </details>

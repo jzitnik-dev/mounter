@@ -20,17 +20,10 @@ mounter --config-get dmenu.use
 
 ### sudo
 
-Use sudo (without dmenu) or polkit (with dmenu) while mounting/unmounting a drive.
+Run mount and other commands that may require root as a root.
 
 **Values**: "true", "false"
-**Default**: "false"
-
-### sudo.command
-
-If you have `sudo` set to true this config says what program should be ran as a sudo. This config is mainly for doas users.
-
-**Values**: Any string
-**Default**: "sudo"
+**Default**: "true"
 
 ### dmenu.use
 

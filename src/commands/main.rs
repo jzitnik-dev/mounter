@@ -29,31 +29,30 @@ pub fn main(prefs: Preferences) {
         })
         .collect();
 
-    let selection = match use_dmenu {
-        true => {
-            let value = run_dmenu_list(&prefs, &options, "Select a mount point");
+    let selection = if use_dmenu {
+        let value = run_dmenu_list(&prefs, &options, "Select a mount point");
 
-            match options.iter().position(|x| x == &value) {
-                Some(index) => index,
-                None => {
-                    eprintln!("Selected mount point is not in the list!");
-                    exit(1);
-                },
+        match options.iter().position(|x| x == &value) {
+            Some(index) => index,
+            None => {
+                eprintln!("Selected mount point is not in the list!");
+                exit(1);
             }
         }
-        false => Select::new()
+    } else {
+        Select::new()
             .with_prompt("Choose a mount point")
             .items(&options)
             .default(0)
             .interact()
-            .unwrap(),
+            .unwrap()
     };
 
     let mount_point = prefs.saved_mount_points.get(selection).unwrap();
     let mounted = is_mounted(&mount_point.address);
 
     if mounted {
-        umount(mount_point, &prefs.config);
+        umount(mount_point, &prefs);
     } else {
         mount(mount_point, &prefs);
     }
