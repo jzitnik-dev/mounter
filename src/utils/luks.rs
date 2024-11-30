@@ -1,32 +1,37 @@
-use std::process::Command;
+use std::{io::Write, process::{Command, Stdio}};
 
 pub fn get_luks_name(mount_address: &String) -> String {
     mount_address.replace("/", "_")
 }
 
-pub fn check_lusk(mount_address: &String, user_password: &Option<String>) -> bool {
-    let mut lukscommand = if let Some(password) = user_password {
-        let mut cmd = Command::new("sh");
-        cmd.arg("-c");
-        cmd.arg(format!(
-            "echo {} | sudo -S cryptsetup isLuks {}",
-            password, mount_address
-        ));
+pub fn check_luks(mount_address: &String, user_password: &Option<String>) -> bool {
+    let mut command = if let Some(_password) = user_password {
+        let mut cmd = Command::new("sudo");
+        cmd.arg("-S").arg("cryptsetup").arg("isLuks").arg(mount_address);
+        cmd.stdin(Stdio::piped());
         cmd
     } else {
         let mut cmd = Command::new("cryptsetup");
-        cmd.arg("isLuks");
-        cmd.arg(mount_address);
+        cmd.arg("isLuks").arg(mount_address);
         cmd
     };
 
-    lukscommand
-        .output()
-        .expect("Error while running LUKS check")
-        .status
-        .success()
+    let mut child = command.spawn().expect("Failed to spawn cryptsetup command");
+
+    if let Some(password) = user_password {
+        if let Some(stdin) = child.stdin.as_mut() {
+            stdin
+                .write_all(format!("{}\n", password).as_bytes())
+                .expect("Failed to write sudo password to stdin");
+        }
+    }
+
+    let output = child.wait_with_output().expect("Failed to execute command");
+
+    output.status.success()
 }
 
+// This will need a rewrite to not use echo
 pub fn unlock(user_password: &Option<String>, address: &String, passphrase: String) {
     let mut command = if let Some(password) = user_password {
         let mut cmd = Command::new("sh");

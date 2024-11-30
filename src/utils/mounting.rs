@@ -4,13 +4,13 @@ use crate::{
     utils::{flag_merge::Flag, logging::console_error},
 };
 use dialoguer::Password;
-use std::process::{exit, Command};
+use std::{io::Write, process::{exit, Command, Stdio}};
 
 use super::{
     dmenu::run_gui_password_dialog,
     flag_merge::{add_flags, flag_merge, parse_flags},
     logging::console_log,
-    luks::{check_lusk, get_luks_name, lock, unlock},
+    luks::{check_luks, get_luks_name, lock, unlock},
     sudo::ask_for_sudo,
 };
 
@@ -60,7 +60,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
         None
     };
 
-    let encrypted = check_lusk(&mount_point.address, &user_password);
+    let encrypted = check_luks(&mount_point.address, &user_password);
     if encrypted {
         let passphrase = run_gui_password_dialog(&preferences, "Enter passphrase for the volume:")
             .unwrap_or_else(|| {
@@ -69,18 +69,6 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
             });
         unlock(&user_password, &mount_point.address, passphrase);
     }
-
-    let mut command = if sudo {
-        let mut cmd = Command::new("echo");
-        cmd.arg(&user_password.unwrap());
-        cmd.arg("|");
-        cmd.arg("sudo");
-        cmd.arg("-S");
-        cmd.arg("mount");
-        cmd
-    } else {
-        Command::new("mount")
-    };
 
     let default_flags = if mount_point.ask_for_password == Some(true) {
         let password = if use_dmenu {
@@ -123,6 +111,9 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     let flags1 = flag_merge(&default_flags, &global_flags, &merge_ignore);
     let flags2 = flag_merge(&flags1, &mount_point_flags, &merge_ignore);
 
+    let mut command = Command::new("sudo");
+    command.arg("-S").arg("mount");
+
     add_flags(&mut command, flags2);
 
     if encrypted {
@@ -135,7 +126,19 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     }
     command.arg(&mount_point.mount_location);
 
-    let output = command.output().expect("Failed to execute command");
+    let mut child = command.spawn().expect("Failed to spawn mount command");
+
+    if sudo {
+        if let Some(password) = user_password {
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin
+                    .write_all(format!("{}\n", password).as_bytes())
+                    .expect("Failed to write to stdin");
+            }
+        }
+    }
+
+    let output = child.wait_with_output().expect("Failed to execute command");
 
     if !output.status.success() {
         console_error(
@@ -149,8 +152,9 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     console_log(
         &preferences.config,
         format!("Drive {} was mounted successfully!", mount_point.address).as_str(),
-    )
+    );
 }
+
 
 pub fn umount_partition(partition: &Partition, preferences: &Preferences) {
     umount_addr(
@@ -184,18 +188,31 @@ pub fn umount_addr(mount_location: &str, mount_address: &String, preferences: &P
     };
 
     let mut command = if sudo {
-        let mut cmd = Command::new("sh");
-        cmd.arg("-c").arg(format!(
-            "echo {} | sudo -S umount {}",
-            user_password.clone().unwrap(),
-            mount_location
-        ));
+        let mut cmd = Command::new("sudo");
+        cmd.arg("-S").arg("umount").arg(mount_location);
+        if let Some(_password) = user_password.clone() {
+            cmd.stdin(Stdio::piped());
+        }
         cmd
     } else {
-        Command::new("umount")
+        let mut cmd = Command::new("umount");
+        cmd.arg(mount_location);
+        cmd
     };
 
-    let output = command.output().expect("Failed to execute command");
+    let mut child = command.spawn().expect("Failed to spawn command");
+
+    if sudo {
+        if let Some(password) = &user_password {
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin
+                    .write_all(format!("{}\n", password).as_bytes())
+                    .expect("Failed to write to stdin");
+            }
+        }
+    }
+
+    let output = child.wait_with_output().expect("Failed to execute command");
 
     if !output.status.success() {
         eprintln!("Umount failed with status: {}", output.status);
@@ -203,7 +220,7 @@ pub fn umount_addr(mount_location: &str, mount_address: &String, preferences: &P
         exit(1);
     }
 
-    let encrypted = check_lusk(mount_address, &user_password);
+    let encrypted = check_luks(mount_address, &user_password);
     if encrypted {
         lock(&user_password, mount_address);
     }

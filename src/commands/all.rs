@@ -8,7 +8,7 @@ use crate::preferences::mount_point::MountPoint;
 use crate::preferences::preferences::Preferences;
 use crate::utils::dmenu::{run_dmenu_global, run_dmenu_list};
 use crate::utils::logging::{console_error, console_log};
-use crate::utils::mounting::{get_mountpoint, is_mounted, mount, umount_partition};
+use crate::utils::mounting::{is_mounted, mount, umount_partition};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Partition {
