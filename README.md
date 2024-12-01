@@ -4,7 +4,7 @@ Simple Rust program for mounting drives on Linux.
 
 Mounter can mount all of your external hard drives or even drives on a network. You can save your mount points for example your NAS and then you just simply mount it with mounter.
 
-It even supports disks encrypted by LUKS.
+It even supports disks encrypted with LUKS.
 
 # Dependencies/Programs needed
 

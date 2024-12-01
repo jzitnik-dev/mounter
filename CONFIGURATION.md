@@ -75,6 +75,8 @@ I personally use this like this:
 
 So all of the drives that I mount in my Linux machine is owned by my user.
 
+Keep in mind that not all filesystems support setting uid and gid.
+
 ### logging.program
 
 What should be used for messages and logging.

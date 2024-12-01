@@ -222,7 +222,7 @@ pub fn umount_addr(mount_location: &str, mount_address: &String, preferences: &P
 
     let encrypted = check_luks(mount_address, &user_password);
     if encrypted {
-        lock(&user_password, mount_address);
+        lock(&user_password, mount_address, &preferences.config);
     }
 
     console_log(
