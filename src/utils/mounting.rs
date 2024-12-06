@@ -58,7 +58,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
         None
     };
 
-    let encrypted = check_luks(&mount_point.address, &user_password);
+    let encrypted = check_luks(&mount_point.address, &user_password, preferences);
     if encrypted {
         let passphrase = run_gui_password_dialog(&preferences, "Enter passphrase for the volume:")
             .unwrap_or_else(|| {
@@ -218,7 +218,7 @@ pub fn umount_addr(mount_location: &str, mount_address: &String, preferences: &P
         exit(1);
     }
 
-    let encrypted = check_luks(mount_address, &user_password);
+    let encrypted = check_luks(mount_address, &user_password, preferences);
     if encrypted {
         lock(&user_password, mount_address, &preferences.config);
     }

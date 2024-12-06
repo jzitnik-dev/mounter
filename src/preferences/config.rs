@@ -13,7 +13,7 @@ pub fn is_valid(key: &str, value: &str) -> ValidationResult {
         | "mount.flags"
         | "dmenu.flags"
         | "logging.program.notify.flags" => ValidationResult::Correct,
-        "sudo" | "dmenu.use" => match value {
+        "sudo" | "dmenu.use" | "luks" => match value {
             "true" | "false" => ValidationResult::Correct,
             _ => ValidationResult::ValueError,
         },
@@ -52,6 +52,7 @@ pub fn is_present(config: &HashMap<String, String>, key: &str) -> IsPresentRespo
         ("mount.flags", ""),
         ("logging.program", "cli"),
         ("logging.program.notify.flags", ""),
+        ("luks", "true"),
     ]
     .iter()
     .cloned()

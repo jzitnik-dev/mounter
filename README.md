@@ -14,7 +14,7 @@ It even supports disks encrypted with LUKS.
 - `sh` For executing scripts
 - `lsblk` For --all command
 - `jq` Used in --all command for parsing output from lsblk
-- `cryptsetup` For LUKS support, needs to be installed even when not using LUKS.
+- `cryptsetup` For LUKS support, needs to be installed when config `luks` is set to `true`.
 
 # Installation
 

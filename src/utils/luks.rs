@@ -4,7 +4,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::utils::logging::console_error;
+use crate::{preferences::{config::get_value, preferences::Preferences}, utils::logging::console_error};
 
 use super::logging::console_log;
 
@@ -12,7 +12,16 @@ pub fn get_luks_name(mount_address: &String) -> String {
     mount_address.replace("/", "_")
 }
 
-pub fn check_luks(mount_address: &String, user_password: &Option<String>) -> bool {
+pub fn check_luks(mount_address: &String, user_password: &Option<String>, pref: &Preferences) -> bool {
+    let use_luks = match get_value(&pref.config, "luks").as_str() {
+        "true" => true,
+        _ => false,
+    };
+
+    if !use_luks {
+        return false;
+    }
+
     let mut command = if let Some(_password) = user_password {
         let mut cmd = Command::new("sudo");
         cmd.arg("-S")
