@@ -41,8 +41,6 @@ pub fn get_mountpoint(partition: &Partition) -> Option<String> {
     partition.mountpoint.clone()
 }
 
-// TODO: Fix mounting
-// The | in the command.arg does not work
 pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     let global_flags_config = get_value(&preferences.config, "mount.flags");
     let sudo = match get_value(&preferences.config, "sudo").as_str() {
