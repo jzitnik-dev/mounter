@@ -12,6 +12,7 @@ use std::process;
     name = "mounter",
     version = env!("CARGO_PKG_VERSION"),
     about = "Simple program for mounting your drives on Linux.",
+    author = "Jakub Žitník",
     group = ArgGroup::new("command")
         .args(&["list", "add", "remove", "config_set"])
         .multiple(false)
@@ -73,7 +74,7 @@ async fn main() {
 
     if cli.config_set.is_some() {
         set_config(loaded_prefs, cli.config_set.unwrap(), &cli.config_file).await;
-        return
+        return;
     }
 
     if cli.config_get.is_some() {

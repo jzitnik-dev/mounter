@@ -8,15 +8,16 @@ use crate::preferences::mount_point::MountPoint;
 use crate::preferences::preferences::Preferences;
 use crate::utils::dmenu::{run_dmenu_global, run_dmenu_list};
 use crate::utils::logging::{console_error, console_log};
-use crate::utils::mounting::{mount, umount_addr};
+use crate::utils::mounting::{is_mounted, mount, umount_partition};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Partition {
-    name: String,
-    size: String,
-    fstype: String,
-    mountpoint: String,
-    children: Option<Vec<Box<Partition>>>,
+pub struct Partition {
+    pub name: String,
+    pub size: String,
+    pub fstype: Option<String>,
+    pub mountpoint: Option<String>,
+    pub r#type: String,
+    pub children: Option<Vec<Box<Partition>>>,
 }
 
 fn filter(partition: &Partition, no_filter: bool) -> bool {
@@ -24,18 +25,18 @@ fn filter(partition: &Partition, no_filter: bool) -> bool {
         return true;
     }
 
-    if partition.mountpoint.trim() == "/"
-        || partition.mountpoint == "/boot"
-        || partition.mountpoint == "/home"
-    {
-        return false;
+    if let Some(mount_point) = &partition.mountpoint {
+        if mount_point.trim() == "/" || mount_point == "/boot" || mount_point == "/home" {
+            return false;
+        }
+        return true;
+    } else {
+        if let Some(ref children) = partition.children {
+            return children.iter().any(|child| filter(child, no_filter));
+        } else {
+            return true;
+        }
     }
-
-    if let Some(ref children) = partition.children {
-        return children.iter().any(|child| filter(child, no_filter));
-    }
-
-    true
 }
 
 pub fn all(no_filter: bool, prefs: Preferences) {
@@ -50,15 +51,8 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         .arg(
             "lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT,TYPE -J | jq '[
             .blockdevices[] | 
-            select(.type == \"disk\") | 
-            .children[]? | 
-            { 
-                name: .name, 
-                size: .size, 
-                fstype: (if .fstype == null then \"N/A\" else .fstype end), 
-                mountpoint: (if .mountpoint == null then \"N/A\" else .mountpoint end),
-                children: .children
-            }
+            select(.type == \"disk\") |
+            .children[]? 
         ]'",
         )
         .output()
@@ -70,8 +64,10 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         Err(_) => panic!("got non UTF-8 data"),
     });
 
+    // All partitions
     let partitions: Vec<Partition> = serde_json::from_str(&log).unwrap();
 
+    // Partitions filtered and fomatted
     let options: Vec<String> = partitions
         .iter()
         .filter(|part| filter(part, no_filter))
@@ -80,7 +76,7 @@ pub fn all(no_filter: bool, prefs: Preferences) {
                 "Name: {}, Size: {}  {}",
                 part.name,
                 part.size,
-                if part.mountpoint != "N/A" { "*" } else { "" }
+                if is_mounted(part) { "*" } else { "" }
             )
         })
         .collect();
@@ -90,44 +86,46 @@ pub fn all(no_filter: bool, prefs: Preferences) {
         exit(1);
     }
 
-    let selection = match use_dmenu {
-        true => {
-            let value = run_dmenu_list(&prefs, &options, "Select a mount point");
+    let selection = if use_dmenu {
+        let value = run_dmenu_list(&prefs, &options, "Select a mount point");
 
-            match options.iter().position(|x| x.trim() == &value) {
-                Some(index) => index,
-                None => {
-                    console_error(&prefs.config, "Selected mount point is not in the list!");
-                    exit(1);
-                }
+        match options.iter().position(|x| x.trim() == &value) {
+            Some(index) => index,
+            None => {
+                console_error(&prefs.config, "Selected mount point is not in the list!");
+                exit(1);
             }
         }
-        false => Select::new()
+    } else {
+        Select::new()
             .with_prompt("Choose a mount point")
             .items(&options)
             .default(0)
             .interact()
-            .unwrap(),
+            .unwrap()
     };
 
+    // Selected partition
     let partition = partitions.get(selection).unwrap();
 
-    if partition.mountpoint != "N/A" {
-        umount_addr(&partition.mountpoint, &prefs.config);
+    // If selected partition is mounted unmount it
+    if is_mounted(partition) {
+        umount_partition(partition, &prefs);
         return;
     }
 
-    let mount_location: String = match use_dmenu {
-        true => run_dmenu_global(
+    let mount_location: String = if use_dmenu {
+        run_dmenu_global(
             // This is very wacky
             &prefs,
             String::from("echo \"\""),
             "Enter mount location (for example /mnt)",
-        ),
-        false => Input::new()
+        )
+    } else {
+        Input::new()
             .with_prompt("Enter mount location (for example /mnt)")
             .interact_text()
-            .expect("Failed to read line"),
+            .expect("Failed to read line")
     };
 
     let address = format!("/dev/{}", partition.name);
