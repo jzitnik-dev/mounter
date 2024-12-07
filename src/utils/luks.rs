@@ -65,11 +65,14 @@ pub fn unlock(user_password: &Option<String>, address: &String, passphrase: Stri
         ));
         cmd
     } else {
-        let mut cmd = Command::new("cryptsetup");
-        cmd.arg("luksOpen");
-        cmd.arg("--key-file=-");
-        cmd.arg(address);
-        cmd.arg(get_luks_name(address));
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c");
+        cmd.arg(format!(
+            "echo -n \"{}\" | cryptsetup luksOpen \"{}\" \"{}\" --key-file=-",
+            passphrase,
+            address,
+            get_luks_name(address)
+        ));
         cmd
     };
 
