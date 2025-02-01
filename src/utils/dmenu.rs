@@ -5,14 +5,14 @@ use crate::preferences::{config::get_value, preferences::Preferences};
 
 use super::flag_merge::{add_flags, flag_merge, parse_flags, stringify_flags, Flag};
 
-pub fn run_gui_password_dialog(pref: &Preferences) -> Option<String> {
+pub fn run_gui_password_dialog(pref: &Preferences, message: &str) -> Option<String> {
     let dialog = get_value(&pref.config, "dmenu.password_dialog.program");
 
     let mut command = match dialog.as_str() {
         "zenity" => {
             let mut command = Command::new("zenity");
             command.arg("--password");
-            command.arg("--title=\"Enter password for your mount point\"");
+            command.arg(format!("--title=\"{}\"", message));
 
             command
         }
@@ -20,8 +20,8 @@ pub fn run_gui_password_dialog(pref: &Preferences) -> Option<String> {
             let mut command = Command::new("yad");
             command.arg("--entry");
             command.arg("--hide-text");
-            command.arg("--title=\"Enter password for your mount point\"");
-            command.arg("--text=\"Enter password for your mount point:\"");
+            command.arg(format!("--title=\"{}\"", message));
+            command.arg(format!("--text=\"{}\"", message));
             command.arg("--width=300");
 
             command
@@ -29,7 +29,7 @@ pub fn run_gui_password_dialog(pref: &Preferences) -> Option<String> {
         "kdialog" => {
             let mut command = Command::new("kdialog");
             command.arg("--password");
-            command.arg("Enter password for your mount point");
+            command.arg(message);
 
             command
         }
@@ -44,7 +44,7 @@ pub fn run_gui_password_dialog(pref: &Preferences) -> Option<String> {
                 },
                 Flag {
                     name: String::from("-p"),
-                    value: Some(String::from("Enter password for your mount point")),
+                    value: Some(String::from(message)),
                 },
                 Flag {
                     name: String::from("-theme-str"),

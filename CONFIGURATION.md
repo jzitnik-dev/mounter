@@ -20,17 +20,10 @@ mounter --config-get dmenu.use
 
 ### sudo
 
-Use sudo (without dmenu) or polkit (with dmenu) while mounting/unmounting a drive.
+Run mount and other commands that may require root as a root.
 
 **Values**: "true", "false"
-**Default**: "false"
-
-### sudo.command
-
-If you have `sudo` set to true this config says what program should be ran as a sudo. This config is mainly for doas users.
-
-**Values**: Any string
-**Default**: "sudo"
+**Default**: "true"
 
 ### dmenu.use
 
@@ -55,6 +48,8 @@ Example for rofi:
 dmenu.command: "rofi"
 dmenu.flags: "-dmenu"
 
+**Default**: ""
+
 ### dmenu.password_dialog.program
 
 Choose what program should be used to show password dialog when using dmenu.
@@ -66,13 +61,19 @@ dmenu does not support password dialog as far as I know.
 
 ### dmenu.password_dialog.rofi.flags
 
-Custom flags for rofi when dmenu.password_dialog.program is set to "rofi". Flags are seperated by `;`. Same format as in dmenu.flags.
+Custom flags for rofi when dmenu.password_dialog.program is set to "rofi".
+
+Flags are seperated by `;`. Same format as in dmenu.flags.
+
+**Default**: ""
 
 ### mount.flags
 
 Custom flags for mount command that mounts the drive. They are merged with flags property in the mount point.
 
 Flags are seperated by `;`. Same format as in dmenu.flags.
+
+**Default**: ""
 
 ##### Use case:
 
@@ -81,6 +82,8 @@ I personally use this like this:
 `-o uid=1000,gid=1000`
 
 So all of the drives that I mount in my Linux machine is owned by my user.
+
+Keep in mind that not all filesystems support setting uid and gid.
 
 ### logging.program
 
@@ -96,3 +99,12 @@ Notify will send notify-send for the message but cli will just log it in stdout.
 Custom flags when running notify-send when logging.program is set to notify.
 
 Flags are seperated by `;`.
+
+**Default**: ""
+
+### luks
+
+Enable or disable a LUKS support. This is only for users that do not have `cryptsetup` installed on their system. It is recommended to keep enabled even when you do not use LUKS.
+
+**Values**: "true", "false"
+**Default**: "true"
