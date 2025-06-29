@@ -109,8 +109,36 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
     let flags1 = flag_merge(&default_flags, &global_flags, &merge_ignore);
     let flags2 = flag_merge(&flags1, &mount_point_flags, &merge_ignore);
 
-    let mut command = Command::new("sudo");
-    command.arg("-S").arg("mount");
+    // Create the mountpoint folder if doesn't exist
+    let mut mkdir = Command::new(if sudo { "sudo" } else { "mkdir" });
+    if sudo {
+        mkdir.arg("-S").arg("mkdir");
+    }
+    mkdir.arg("-p").arg(&mount_point.mount_location);
+    let mut mkdir_child = mkdir.spawn().expect("Failed to spawn mount command");
+    if sudo {
+        if let Some(password) = &user_password {
+            if let Some(stdin) = mkdir_child.stdin.as_mut() {
+                stdin
+                    .write_all(format!("{}\n", password).as_bytes())
+                    .expect("Failed to write to stdin");
+            }
+        }
+    }
+    let mkdir_output = mkdir_child.wait_with_output().expect("Failed to execute command");
+    if !mkdir_output.status.success() {
+        console_error(
+            &preferences.config,
+            format!("Mkdir failed with status code: {}", mkdir_output.status).as_str(),
+        );
+        eprintln!("Stderr: {}", String::from_utf8_lossy(&mkdir_output.stderr));
+        exit(1);
+    }
+
+    let mut command = Command::new(if sudo { "sudo" } else { "mount" });
+    if sudo {
+        command.arg("-S").arg("mount");
+    }
 
     add_flags(&mut command, flags2);
 

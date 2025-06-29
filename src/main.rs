@@ -84,4 +84,5 @@ async fn main() {
 
     // Main
     mainCommand(loaded_prefs);
+
 }
