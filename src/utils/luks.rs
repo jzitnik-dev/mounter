@@ -36,13 +36,17 @@ pub fn check_luks(mount_address: &String, user_password: &Option<String>, pref: 
         cmd
     };
 
-    let mut child = command.spawn().expect("Failed to spawn cryptsetup command");
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(_) => return false, // Return false if spawn fails
+    };
 
     if let Some(password) = user_password {
         if let Some(stdin) = child.stdin.as_mut() {
             stdin
                 .write_all(format!("{}\n", password).as_bytes())
                 .expect("Failed to write sudo password to stdin");
+            stdin.flush().expect("Failed to flush stdin");
         }
     }
 
@@ -96,6 +100,7 @@ pub fn lock(user_password: &Option<String>, address: &String, config: &HashMap<S
         cmd
     };
 
+    command.stdin(Stdio::piped());
     let mut child = command.spawn().expect("Failed to spawn cryptsetup command");
 
     if let Some(password) = user_password {
@@ -103,6 +108,7 @@ pub fn lock(user_password: &Option<String>, address: &String, config: &HashMap<S
             stdin
                 .write_all(format!("{}\n", password).as_bytes())
                 .expect("Failed to write sudo password to stdin");
+            stdin.flush().expect("Failed to flush stdin");
         }
     }
 

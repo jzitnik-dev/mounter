@@ -67,6 +67,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
             });
         unlock(&user_password, &mount_point.address, passphrase);
     }
+    let encrypted = false;
 
     let default_flags = if mount_point.ask_for_password == Some(true) {
         let password = if use_dmenu {
@@ -115,6 +116,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
         mkdir.arg("-S").arg("mkdir");
     }
     mkdir.arg("-p").arg(&mount_point.mount_location);
+    mkdir.stdin(Stdio::piped());
     let mut mkdir_child = mkdir.spawn().expect("Failed to spawn mount command");
     if sudo {
         if let Some(password) = &user_password {
@@ -122,6 +124,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
                 stdin
                     .write_all(format!("{}\n", password).as_bytes())
                     .expect("Failed to write to stdin");
+                stdin.flush().expect("Failed to flush stdin");
             }
         }
     }
@@ -151,6 +154,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
         command.arg(&mount_point.address);
     }
     command.arg(&mount_point.mount_location);
+    command.stdin(Stdio::piped());
 
     let mut child = command.spawn().expect("Failed to spawn mount command");
 
@@ -160,6 +164,7 @@ pub fn mount(mount_point: &MountPoint, preferences: &Preferences) {
                 stdin
                     .write_all(format!("{}\n", password).as_bytes())
                     .expect("Failed to write to stdin");
+                stdin.flush().expect("Failed to flush stdin");
             }
         }
     }
